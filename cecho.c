@@ -81,6 +81,54 @@ int main(int argc, char** argv) {
     OSCTUNE = 0b01110000;
     PLLEN = 1;
 
+    WDTCON = 0;
+    SLRCON = 0;
+    ANSEL = 0;
+    ANSELH = 0;
+
+    PORTD = 0; //Dataport is input for now
+    TRISD = 1;
+
+    PORTA = 0; //Addrports are output
+    TRISA = 0;
+    PORTC = 0;
+    TRISC = 0;
+
+    PORTB = 0;
+    //Put mem into idle mode here
+    //Disable knob device here
+    TRISB = 0b11110000;
+
+    //Input_disable
+
+    ADCON2 = 0b00101110; //Set up ADC
+    ADCON1 = 0;
+    TRISE2 = 1;
+    ANS7 = 1;
+    ADCON0 = 0b00011101;
+
+    //ldelay x 8
+
+    GO = 1;
+    while(GO) {};
+
+    unsigned midptr = ADRESH;
+
+    GIE = 1; //Interrupt setup
+    PEIE = 1;
+    ADIE = 1;
+
+    TRISB3 = 1; //PWM setup
+    PR2 = 0xff;
+    CCP2CON = 0b00001100;
+    TMR2IF = 0;
+    TMR2ON = 1;
+    while(!TMR2IF) {};
+    TMR2IF = 0;
+    TRISB3 = 0;
+
+    
+
     
 
 
