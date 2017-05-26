@@ -1,6 +1,6 @@
 /* 
  * File:   cecho.c
- * Author: Cassidy
+ * Author: Cass
  *
  * Created on May 4, 2017, 3:23 PM
  */
@@ -76,15 +76,23 @@
 #define addrlow PORTC
 #define dataport PORTD
 
+void interrupt isr() {
+    //Interrupt Service routine.
+    //Everything important (after init) will happen in here.
+    //Working on it...
+}
+
 int main(int argc, char** argv) {
 
+    //Kick the oscillator up to 64 MHz
     OSCTUNE = 0b01110000;
     PLLEN = 1;
 
-    WDTCON = 0;
-    SLRCON = 0;
-    ANSEL = 0;
-    ANSELH = 0;
+    //Disable nuisance features
+    WDTCON = 0; //Watchdog timer off
+    SLRCON = 0; //Slew-rate limiters off
+    ANSEL = 0; //Analog pins off
+    ANSELH = 0; //The rest of the analog pins off
 
     PORTD = 0; //Dataport is input for now
     TRISD = 1;
@@ -127,10 +135,8 @@ int main(int argc, char** argv) {
     TMR2IF = 0;
     TRISB3 = 0;
 
-    
-
-    
-
+    //Mainloop (does nothing):
+    while(1){};
 
     return (EXIT_SUCCESS);
 }
