@@ -68,18 +68,84 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "togglefunctions.h"
+
 /*
  * 
  */
-
 #define addrhigh PORTA
 #define addrlow PORTC
 #define dataport PORTD
 
+typedef union {
+    unsigned int address;
+    struct {
+        unsigned char lobyte;
+        unsigned char hibyte;
+        //bit pagebit;
+    };
+} Address_t;
+
+Address_t wptr, rptr;
+unsigned char midpoint, knobcount, period, inbuffer, kbuffer;
+
+unsigned char memRead(Address_t raddr) {
+    unsigned char rvalue;
+    addrlow = raddr.lobyte;
+    addrhigh = raddr.hibyte;
+    //Two NOPs go here
+    readEnable();
+    //Four NOPs go here
+    rvalue = dataport;
+    readDisable();
+    return rvalue;
+}
+
+void memWrite(Address_t waddr, unsigned char data) {
+    addrlow = waddr.lobyte;
+    addrhigh = waddr.hibyte;
+    //NOPNOP
+    dataport = data;
+    TRISD = 0;
+    //NOPNOP
+    writeEnable();
+    //NOPNOP
+    writeDisable();
+    //NOPNOP
+    TRISD = 255;
+}
+
+void knob() {
+    kEnable();
+    //long delay //knob device runs slow; wait for it ti catch up
+    kbuffer = dataport;
+    if((4-abs(kbuffer-period))<0){
+        period = kbuffer;
+    }
+    kDisable();
+}
+
 void interrupt isr() {
     //Interrupt Service routine.
     //Everything important (after init) will happen in here.
-    //Working on it...
+    if(ADIF) {
+        ADIF = 0; //Clear interrupt flag
+        inbuffer = ADRESH; //Load sample into buffer
+        GO = 1; //Get the ADC going again
+
+        wptr.address++; //Increment write pointer
+
+        //Read pointer = write pointer - offset
+        rptr.lobyte = wptr.lobyte;
+        rptr.hibyte = wptr.hibyte - period;
+
+        memWrite(wptr, inbuffer); //Store sample
+
+        CCPR2L = memRead(rptr); //Read delayed sample into PWM register
+
+        knobcount++; //Increment knob counter
+        if (knobcount == 0) {knob();}; //Get value from knob device if knob counter == 0
+    }
 }
 
 int main(int argc, char** argv) {
@@ -107,7 +173,7 @@ int main(int argc, char** argv) {
     //Disable knob device here
     TRISB = 0b11110000;
 
-    //Input_disable
+    inputDisable(); //Disable input
 
     ADCON2 = 0b00101110; //Set up ADC
     ADCON1 = 0;
@@ -115,12 +181,12 @@ int main(int argc, char** argv) {
     ANS7 = 1;
     ADCON0 = 0b00011101;
 
-    //ldelay x 8
+    //ldelay x 8 //Wait for level to stablize
 
+    //Get midpoint sample from ADC
     GO = 1;
     while(GO) {};
-
-    unsigned midptr = ADRESH;
+    midpoint = ADRESH;
 
     GIE = 1; //Interrupt setup
     PEIE = 1;
@@ -134,6 +200,22 @@ int main(int argc, char** argv) {
     while(!TMR2IF) {};
     TMR2IF = 0;
     TRISB3 = 0;
+
+    wptr.address = 0;
+
+    //Fill memory with midpoint values
+    for(;wptr.address < 0x10000; wptr.address++) {
+        memWrite(wptr, midpoint);
+    }
+
+    wptr.address = 0; //Zero write address
+
+    inputEnable(); //Enable input
+
+    rptr.address = 0; //Zero read address
+    knobcount = 0; //Clear knob counter
+
+    GO = 1; //Start ADC
 
     //Mainloop (does nothing):
     while(1){};
