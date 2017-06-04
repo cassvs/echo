@@ -12,35 +12,35 @@
 extern "C" {
 #endif
 
-void readEnable() {
+void inline readEnable() {
     RB1 = 0;
 }
 
-void readDisable() {
+void inline readDisable() {
     RB1 = 1;
 }
 
-void writeEnable() {
+void inline writeEnable() {
     RB0 = 0;
 }
 
-void writeDisable() {
+void inline writeDisable() {
     RB0 = 1;
 }
 
-void kEnable() {
+void inline kEnable() {
     RB2 = 1;
 }
 
-void kDisable() {
+void inline kDisable() {
     RB2 = 0;
 }
 
-void inputEnable() {
+void inline inputEnable() {
     RB4 = 1;
 }
 
-void inputDisable() {
+void inline inputDisable() {
     RB4 = 0;
 }
 
